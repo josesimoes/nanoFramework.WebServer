@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.props" Condition="Exists('..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.props')" />
+  <Import Project="..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.props" Condition="Exists('..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.props')" />
+  <Import Project="..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.props" Condition="Exists('..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.props')" />
+  <Import Project="..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.props" Condition="Exists('..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.props')" />
+  <!-- Keep task assembly properties available during NuGet's intermediate import removal. -->
+  <Import Project="..\packages\Microsoft.Build.Tasks.Git.*\build\Microsoft.Build.Tasks.Git.props" Condition="'$(MicrosoftBuildTasksGitAssemblyFile)' == ''" />
+  <Import Project="..\packages\Microsoft.SourceLink.Common.*\build\Microsoft.SourceLink.Common.props" Condition="'$(_MicrosoftSourceLinkCommonAssemblyFile)' == ''" />
+  <PropertyGroup Label="Globals">
+    <NanoFrameworkProjectSystemPath>$(MSBuildExtensionsPath)\nanoFramework\v1.0\</NanoFrameworkProjectSystemPath>
+  </PropertyGroup>
+  <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.Default.props" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.Default.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{11A8DD76-328B-46DF-9F39-F559912D0360};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>9d8a2d18-8036-4880-b46b-d5218247257d</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <FileAlignment>512</FileAlignment>
+    <RootNamespace>nanoFramework.WebServer</RootNamespace>
+    <AssemblyName>nanoFramework.WebServer</AssemblyName>
+    <TargetFrameworkVersion>v1.0</TargetFrameworkVersion>
+    <DocumentationFile>bin\$(Configuration)\nanoFramework.WebServer.xml</DocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(TF_BUILD)' == 'True' or '$(ContinuousIntegrationBuild)' == 'True'">true</RestoreLockedMode>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Deterministic>true</Deterministic>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <DefineConstants>FILESYSTEM;</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+  <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.props" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.props')" />
+  <ItemGroup>
+    <Compile Include="..\nanoFramework.WebServer\Authentication.cs" Link="Authentication.cs" />
+    <Compile Include="..\nanoFramework.WebServer\AuthenticationAttribute.cs" Link="AuthenticationAttribute.cs" />
+    <Compile Include="..\nanoFramework.WebServer\AuthenticationType.cs" Link="AuthenticationType.cs" />
+    <Compile Include="..\nanoFramework.WebServer\CallbackRoutes.cs" Link="CallbackRoutes.cs" />
+    <Compile Include="..\nanoFramework.WebServer\CaseSensitiveAttribute.cs" Link="CaseSensitiveAttribute.cs" />
+    <Compile Include="..\nanoFramework.WebServer\Header.cs" Link="Header.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpListenerRequestExtensions.cs" Link="HttpListenerRequestExtensions.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\FilePart.cs" Link="HttpMultipartParser\FilePart.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\HashtableUtility.cs" Link="HttpMultipartParser\HashtableUtility.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\HeaderUtility.cs" Link="HttpMultipartParser\HeaderUtility.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\LineBuffer.cs" Link="HttpMultipartParser\LineBuffer.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\LineReader.cs" Link="HttpMultipartParser\LineReader.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\MultipartFormDataParser.cs" Link="HttpMultipartParser\MultipartFormDataParser.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\MultipartFormDataParserException.cs" Link="HttpMultipartParser\MultipartFormDataParserException.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpMultipartParser\ParameterPart.cs" Link="HttpMultipartParser\ParameterPart.cs" />
+    <Compile Include="..\nanoFramework.WebServer\HttpProtocol.cs" Link="HttpProtocol.cs" />
+    <Compile Include="..\nanoFramework.WebServer\MethodAttribute.cs" Link="MethodAttribute.cs" />
+    <Compile Include="..\nanoFramework.WebServer\RouteAttribute.cs" Link="RouteAttribute.cs" />
+    <Compile Include="..\nanoFramework.WebServer\UrlParameter.cs" Link="UrlParameter.cs" />
+    <Compile Include="..\nanoFramework.WebServer\WebServer.cs" Link="WebServer.cs" />
+    <Compile Include="..\nanoFramework.WebServer\WebServerEventArgs.cs" Link="WebServerEventArgs.cs" />
+    <Compile Include="..\nanoFramework.WebServer\WebServerStatus.cs" Link="WebServerStatus.cs" />
+    <Compile Include="..\nanoFramework.WebServer\WebServerStatusEventArgs.cs" Link="WebServerStatusEventArgs.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="..\key.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.CoreLibrary.2.0.0-preview.67\lib\netnano1.0\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="nanoFramework.Runtime.Events, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.Runtime.Events.2.0.0-preview.19\lib\netnano1.0\nanoFramework.Runtime.Events.dll</HintPath>
+    </Reference>
+    <Reference Include="nanoFramework.System.Collections, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.Collections.2.0.0-preview.24\lib\netnano1.0\nanoFramework.System.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="nanoFramework.System.Text, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.Text.2.0.0-preview.37\lib\netnano1.0\nanoFramework.System.Text.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.FileSystem, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.IO.FileSystem.2.0.0-preview.30\lib\netnano1.0\System.IO.FileSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Streams, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.IO.Streams.2.0.0-preview.29\lib\netnano1.0\System.IO.Streams.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.Net.2.0.0-preview.52\lib\netnano1.0\System.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.Net.Http.Server.2.0.0-preview.27\lib\netnano1.0\System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c07d481e9758c731">
+      <HintPath>..\packages\nanoFramework.System.Threading.2.0.0-preview.20\lib\netnano1.0\System.Threading.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="packages.lock.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="HttpMultipartParser\" />
+  </ItemGroup>
+  <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.CSharp.targets" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.CSharp.targets')" />
+  <ProjectExtensions>
+    <ProjectCapabilities>
+      <ProjectConfigurationsDeclaredAsItems />
+    </ProjectCapabilities>
+  </ProjectExtensions>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105.The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.props'))" />
+    <Error Condition="!Exists('..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.targets'))" />
+  </Target>
+  <Import Project="..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.targets" Condition="Exists('..\packages\Nerdbank.GitVersioning.3.10.94\build\Nerdbank.GitVersioning.targets')" />
+  <Import Project="..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.targets" Condition="Exists('..\packages\Microsoft.Build.Tasks.Git.10.0.404\build\Microsoft.Build.Tasks.Git.targets')" />
+  <Import Project="..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.targets" Condition="Exists('..\packages\Microsoft.SourceLink.Common.10.0.404\build\Microsoft.SourceLink.Common.targets')" />
+  <Import Project="..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.targets" Condition="Exists('..\packages\Microsoft.SourceLink.GitHub.10.0.404\build\Microsoft.SourceLink.GitHub.targets')" />
+</Project>

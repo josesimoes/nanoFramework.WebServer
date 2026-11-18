@@ -16,14 +16,15 @@
     <repository type="git" url="https://github.com/nanoframework/nanoFramework.WebServer" commit="$commit$" />
     <copyright>Copyright (c) .NET Foundation and Contributors</copyright>
     <description>This is a simple multithread WebServer supporting simple controller and event based calls.
-Perfect for .NET nanoFramework REST API based project. Support all type of Http Methods.
-Perfect for simple embedded web pages, with Support of file on a storage (USB, SD Card, in Memory).
-Supports both HTTPS and HTTP.</description>
+Perfect for .NET nanoFramework REST API based project. Supports both HTTPS and HTTP.
+If serving files from local storage is a requirement, please use instead the 'nanoFramework.WebServer.FileSystem' nuget.
+</description>
     <tags>http https webserver net netmf nf nanoframework</tags>
     <dependencies>
-      <dependency id="nanoFramework.CoreLibrary" version="1.12.0" />
-      <dependency id="nanoFramework.System.Net.Http.Server" version="1.4.0.14" />
-      <dependency id="nanoFramework.Windows.Storage" version="1.4.7" />
+      <group targetFramework=".NETnanoFramework1.0">
+        <dependency id="nanoFramework.CoreLibrary" version="2.0.0-preview.67" />
+        <dependency id="nanoFramework.System.Net.Http.Server" version="2.0.0-preview.27" />
+      </group>
     </dependencies>
   </metadata>
   <files>

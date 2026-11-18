@@ -1,21 +1,19 @@
-//
-// Copyright (c) 2020 Laurent Ellerbach and the project contributors
-// See LICENSE file in the project root for full license information.
-//
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections;
 using System.Diagnostics;
+#if FILESYSTEM
+using System.IO;
+#endif
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
-using Windows.Storage;
-using Windows.Storage.Streams;
-
-
 namespace nanoFramework.WebServer
 {
     /// <summary>
@@ -39,10 +37,11 @@ namespace nanoFramework.WebServer
         public const char ParamEqual = '=';
 
         private const int MaxSizeBuffer = 1024;
+        private const string DefaultRouteMethod = "GET";
 
         #region internal objects
 
-        private bool _cancel = false;
+        private bool _cancel = true;
         private Thread _serverThread = null;
         private readonly ArrayList _callbackRoutes;
         private readonly HttpListener _listener;
@@ -90,6 +89,11 @@ namespace nanoFramework.WebServer
         /// Default APiKey to be used for authentication when no key is specified in the attribute
         /// </summary>
         public string ApiKey { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the web server is running.
+        /// </summary>
+        public bool IsRunning => !_cancel;
 
         #endregion
 
@@ -156,6 +160,101 @@ namespace nanoFramework.WebServer
             return retParams;
         }
 
+        /// <summary>
+        /// Extracts route parameters from a URL that matches a parameterized route.
+        /// </summary>
+        /// <param name="route">The route template with parameters (e.g., "/api/devices/{id}").</param>
+        /// <param name="rawUrl">The actual URL being requested.</param>
+        /// <param name="caseSensitive">Whether the comparison should be case sensitive.</param>
+        /// <returns>An array of UrlParameter objects containing the parameter names and values, or null if the route doesn't match.</returns>
+        public static UrlParameter[] ExtractRouteParameters(string route, string rawUrl, bool caseSensitive = false)
+        {
+            if (string.IsNullOrEmpty(route) || string.IsNullOrEmpty(rawUrl))
+            {
+                return null;
+            }
+
+            // Remove query parameters from the URL for matching
+            var urlParam = rawUrl.IndexOf(ParamStart);
+            var urlPath = urlParam > 0 ? rawUrl.Substring(0, urlParam) : rawUrl;
+
+            // Normalize the URL path and route for comparison
+            var urlToCompare = caseSensitive ? urlPath : urlPath.ToLower();
+            var routeToCompare = caseSensitive ? route : route.ToLower();
+
+            // Ensure both paths start with '/' for consistent segment splitting
+            if (!urlToCompare.StartsWith("/"))
+            {
+                urlToCompare = "/" + urlToCompare;
+            }
+            if (!routeToCompare.StartsWith("/"))
+            {
+                routeToCompare = "/" + routeToCompare;
+            }
+
+            // Split into segments
+            var urlSegments = urlToCompare.Split('/');
+            var routeSegments = routeToCompare.Split('/');
+
+            // Number of segments must match
+            if (urlSegments.Length != routeSegments.Length)
+            {
+                return null;
+            }
+
+            ArrayList parameters = new ArrayList();
+
+            // Compare each segment and extract parameters
+            for (int i = 0; i < routeSegments.Length; i++)
+            {
+                var routeSegment = routeSegments[i];
+                var urlSegment = urlSegments[i];
+
+                // Skip empty segments (from leading slash)
+                if (string.IsNullOrEmpty(routeSegment) && string.IsNullOrEmpty(urlSegment))
+                {
+                    continue;
+                }
+
+                // Check if this is a parameter segment (starts and ends with curly braces)
+                if (routeSegment.Length > 2 &&
+                    routeSegment.StartsWith("{") &&
+                    routeSegment.EndsWith("}"))
+                {
+                    // Parameter segment matches any non-empty segment that doesn't contain '/'
+                    if (string.IsNullOrEmpty(urlSegment) || urlSegment.IndexOf('/') >= 0)
+                    {
+                        return null;
+                    }
+
+                    // Extract parameter name (remove curly braces)
+                    var paramName = routeSegment.Substring(1, routeSegment.Length - 2);
+                    parameters.Add(new UrlParameter { Name = paramName, Value = urlSegments[i] }); // Use original case for value
+                    continue;
+                }
+
+                // Exact match required for non-parameter segments
+                if (routeSegment != urlSegment)
+                {
+                    return null;
+                }
+            }
+
+            // Convert ArrayList to array
+            if (parameters.Count == 0)
+            {
+                return null;
+            }
+
+            var result = new UrlParameter[parameters.Count];
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                result[i] = (UrlParameter)parameters[i];
+            }
+
+            return result;
+        }
+
         #endregion
 
         #region Constructors
@@ -165,7 +264,21 @@ namespace nanoFramework.WebServer
         /// </summary>
         /// <param name="port">Port number to listen on.</param>
         /// <param name="protocol"><see cref="HttpProtocol"/> version to use with web server.</param>
-        public WebServer(int port, HttpProtocol protocol) : this(port, protocol, null)
+        public WebServer(
+            int port,
+            HttpProtocol protocol) : this(port, protocol, null, null)
+        { }
+
+        /// <summary>
+        /// Instantiates a new web server.
+        /// </summary>
+        /// <param name="port">Port number to listen on.</param>
+        /// <param name="protocol"><see cref="HttpProtocol"/> version to use with web server.</param>
+        /// <param name="address">IP address to bind to. If <c>null</c>, the server will bind to the default network interface.</param>
+        public WebServer(
+            int port,
+            HttpProtocol protocol,
+            IPAddress address) : this(port, protocol, address, null)
         { }
 
         /// <summary>
@@ -174,79 +287,104 @@ namespace nanoFramework.WebServer
         /// <param name="port">Port number to listen on.</param>
         /// <param name="protocol"><see cref="HttpProtocol"/> version to use with web server.</param>
         /// <param name="controllers">Controllers to use with this web server.</param>
-        public WebServer(int port, HttpProtocol protocol, Type[] controllers)
+        public WebServer(
+            int port,
+            HttpProtocol protocol,
+            Type[] controllers) : this(port, protocol, null, controllers)
+        { }
+
+        /// <summary>
+        /// Instantiates a new web server.
+        /// </summary>
+        /// <param name="port">Port number to listen on.</param>
+        /// <param name="protocol"><see cref="HttpProtocol"/> version to use with web server.</param>
+        /// <param name="address">IP address to bind to. If <see langword="null"/>, will bind to default address.</param>
+        /// <param name="controllers">Controllers to use with this web server.</param>
+        public WebServer(
+            int port,
+            HttpProtocol protocol,
+            IPAddress address,
+            Type[] controllers)
         {
             _callbackRoutes = new ArrayList();
 
-            if (controllers != null)
-            {
-                foreach (var controller in controllers)
-                {
-                    var controlAttribs = controller.GetCustomAttributes(true);
-                    Authentication authentication = null;
-                    foreach (var ctrlAttrib in controlAttribs)
-                    {
-                        if (typeof(AuthenticationAttribute) == ctrlAttrib.GetType())
-                        {
-                            var strAuth = ((AuthenticationAttribute)ctrlAttrib).AuthenticationMethod;
-                            // We do support only None, Basic and ApiKey, raising an exception if this doesn't start by any
-                            authentication = ExtractAuthentication(strAuth);
-                        }
-                    }
-
-                    var functions = controller.GetMethods();
-                    foreach (var func in functions)
-                    {
-                        var attributes = func.GetCustomAttributes(true);
-                        CallbackRoutes callbackRoutes = null;
-                        foreach (var attrib in attributes)
-                        {
-                            if (typeof(RouteAttribute) == attrib.GetType())
-                            {
-                                callbackRoutes = new CallbackRoutes();
-                                callbackRoutes.Route = ((RouteAttribute)attrib).Route;
-                                callbackRoutes.CaseSensitive = false;
-                                callbackRoutes.Method = string.Empty;
-                                callbackRoutes.Authentication = authentication;
-
-                                callbackRoutes.Callback = func;
-                                foreach (var otherattrib in attributes)
-                                {
-                                    if (typeof(MethodAttribute) == otherattrib.GetType())
-                                    {
-                                        callbackRoutes.Method = ((MethodAttribute)otherattrib).Method;
-                                    }
-                                    else if (typeof(CaseSensitiveAttribute) == otherattrib.GetType())
-                                    {
-                                        callbackRoutes.CaseSensitive = true;
-                                    }
-                                    else if (typeof(AuthenticationAttribute) == otherattrib.GetType())
-                                    {
-                                        var strAuth = ((AuthenticationAttribute)otherattrib).AuthenticationMethod;
-                                        // A method can have a different authentication than the main class, so we override if any
-                                        callbackRoutes.Authentication = ExtractAuthentication(strAuth);
-                                    }
-                                }
-
-                                _callbackRoutes.Add(callbackRoutes);
-                            }
-                        }
-                    }
-
-                }
-            }
-
-            foreach (var callback in _callbackRoutes)
-            {
-                var cb = (CallbackRoutes)callback;
-                Debug.WriteLine($"{cb.Callback.Name}, {cb.Route}, {cb.Method}, {cb.CaseSensitive}");
-            }
+            RegisterControllers(controllers);
 
             Protocol = protocol;
             Port = port;
+
             string prefix = Protocol == HttpProtocol.Http ? "http" : "https";
-            _listener = new HttpListener(prefix, port);
-            Debug.WriteLine("Web server started on port " + port.ToString());
+
+            _listener = new HttpListener(
+                prefix,
+                port,
+                address);
+        }
+
+        private void RegisterControllers(Type[] controllers)
+        {
+            if (controllers == null)
+            {
+                return;
+            }
+
+            foreach (var controller in controllers)
+            {
+                var controlAttribs = controller.GetCustomAttributes(true);
+                Authentication authentication = null;
+                foreach (var ctrlAttrib in controlAttribs)
+                {
+                    if (typeof(AuthenticationAttribute) == ctrlAttrib.GetType())
+                    {
+                        var strAuth = ((AuthenticationAttribute)ctrlAttrib).AuthenticationMethod;
+                        // We do support only None, Basic and ApiKey, raising an exception if this doesn't start by any
+                        authentication = ExtractAuthentication(strAuth);
+                    }
+                }
+
+                var functions = controller.GetMethods();
+                foreach (var func in functions)
+                {
+                    var attributes = func.GetCustomAttributes(true);
+                    foreach (var attrib in attributes)
+                    {
+                        if (typeof(RouteAttribute) != attrib.GetType())
+                        {
+                            continue;
+                        }
+
+                        var callbackRoutes = new CallbackRoutes
+                        {
+                            Route = ((RouteAttribute)attrib).Route,
+                            CaseSensitive = false,
+                            Method = string.Empty,
+                            Authentication = authentication,
+                            Callback = func
+                        };
+
+                        foreach (var attribute in attributes)
+                        {
+                            if (typeof(MethodAttribute) == attribute.GetType())
+                            {
+                                callbackRoutes.Method = ((MethodAttribute)attribute).Method;
+                            }
+                            else if (typeof(CaseSensitiveAttribute) == attribute.GetType())
+                            {
+                                callbackRoutes.CaseSensitive = true;
+                            }
+                            else if (typeof(AuthenticationAttribute) == attribute.GetType())
+                            {
+                                var strAuth = ((AuthenticationAttribute)attribute).AuthenticationMethod;
+                                // A method can have a different authentication than the main class, so we override if any
+                                callbackRoutes.Authentication = ExtractAuthentication(strAuth);
+                            }
+                        }
+
+                        _callbackRoutes.Add(callbackRoutes);
+                        Debug.WriteLine($"{callbackRoutes.Callback.Name}, {callbackRoutes.Route}, {callbackRoutes.Method}, {callbackRoutes.CaseSensitive}");
+                    }
+                }
+            }
         }
 
         private Authentication ExtractAuthentication(string strAuth)
@@ -281,16 +419,16 @@ namespace nanoFramework.WebServer
                         var space = strAuth.IndexOf(' ');
                         if (space < 0)
                         {
-                            throw new ArgumentException($"Authentication attribute Basic should be 'Basic:user passowrd'");
+                            throw new ArgumentException($"Authentication attribute Basic should be 'Basic:user password'");
                         }
 
                         var user = strAuth.Substring(sep + 1, space - sep - 1);
                         var password = strAuth.Substring(space + 1);
-                        authentication = new Authentication(new NetworkCredential(user, password, System.Net.AuthenticationType.Basic));
+                        authentication = new Authentication(new NetworkCredential(user, password, (global::System.Net.AuthenticationType)AuthenticationType.Basic));
                     }
                     else
                     {
-                        throw new ArgumentException($"Authentication attribute Basic should be 'Basic:user passowrd'");
+                        throw new ArgumentException($"Authentication attribute Basic should be 'Basic:user password'");
                     }
                 }
             }
@@ -328,6 +466,8 @@ namespace nanoFramework.WebServer
         /// <summary>
         /// Delegate for the CommandReceived event.
         /// </summary>
+        /// <param name="obj">The source of the event.</param>
+        /// <param name="e">A WebServerEventArgs that contains the event data.</param>
         public delegate void GetRequestHandler(object obj, WebServerEventArgs e);
 
         /// <summary>
@@ -335,6 +475,18 @@ namespace nanoFramework.WebServer
         /// Valid commands are defined in the AllowedCommands property.
         /// </summary>
         public event GetRequestHandler CommandReceived;
+
+        /// <summary>
+        /// Represents the method that will handle the WebServerStatusChanged event of a WebServer.
+        /// </summary>
+        /// <param name="obj">The source of the event.</param>
+        /// <param name="e">A WebServerStatusEventArgs that contains the event data.</param>
+        public delegate void WebServerStatusHandler(object obj, WebServerStatusEventArgs e);
+
+        /// <summary>
+        /// Occurs when the status of the WebServer changes.
+        /// </summary>
+        public event WebServerStatusHandler WebServerStatusChanged;
 
         #endregion
 
@@ -351,30 +503,30 @@ namespace nanoFramework.WebServer
             }
 
             bool bStarted = true;
+#if DEBUG
             // List Ethernet interfaces, so we can determine the server's address
             ListInterfaces();
+#endif
             // start server           
             try
             {
                 _cancel = false;
                 _serverThread.Start();
-                Debug.WriteLine("Started server in thread " + _serverThread.GetHashCode().ToString());
+                Debug.WriteLine("Web server started on port " + Port);
+                Debug.WriteLine("Started server in thread " + _serverThread.GetHashCode());
             }
             catch
             {   //if there is a problem, maybe due to the fact we did not wait enough
                 _cancel = true;
                 bStarted = false;
             }
-            return bStarted;
-        }
 
-        /// <summary>
-        /// Restart the server.
-        /// </summary>
-        private bool Restart()
-        {
-            Stop();
-            return Start();
+            if (bStarted)
+            {
+                WebServerStatusChanged?.Invoke(this, new WebServerStatusEventArgs(WebServerStatus.Running));
+            }
+
+            return bStarted;
         }
 
         /// <summary>
@@ -386,7 +538,8 @@ namespace nanoFramework.WebServer
             Thread.Sleep(100);
             _serverThread.Abort();
             _serverThread = null;
-            Debug.WriteLine("Stoped server in thread ");
+            // Event is generate in the running thread
+            Debug.WriteLine("Stopped server in thread ");
         }
 
         /// <summary>
@@ -394,16 +547,30 @@ namespace nanoFramework.WebServer
         /// </summary>
         /// <param name="response">the socket stream</param>
         /// <param name="strResponse">the stream to output</param>
-        public static void OutPutStream(HttpListenerResponse response, string strResponse)
+        [Obsolete("Use OutputAsStream instead. This method will be removed in a future version.")]
+        public static void OutPutStream(HttpListenerResponse response, string strResponse) => OutputAsStream(response, strResponse);
+
+        /// <summary>
+        /// Output a string content as a stream.
+        /// </summary>
+        /// <param name="response">The response to write to.</param>
+        /// <param name="content">the stream to output</param>
+        public static void OutputAsStream(
+            HttpListenerResponse response,
+            string content)
         {
             if (response == null)
             {
                 return;
             }
 
-            byte[] messageBody = Encoding.UTF8.GetBytes(strResponse);
+            byte[] messageBody = Encoding.UTF8.GetBytes(content);
+
             response.ContentLength64 = messageBody.Length;
-            response.OutputStream.Write(messageBody, 0, messageBody.Length);
+            response.OutputStream.Write(
+                messageBody,
+                0,
+                messageBody.Length);
         }
 
         /// <summary>
@@ -424,40 +591,42 @@ namespace nanoFramework.WebServer
             response.StatusCode = (int)code;
         }
 
+#if FILESYSTEM
         /// <summary>
         /// Return a file from Storage over HTTP response.
         /// </summary>
         /// <param name="response"><see cref="HttpListenerResponse"/> to send the content over.</param>
         /// <param name="strFilePath">The file to send</param>
         /// <param name="contentType">The type of file, if empty string, then will use auto detection</param>
-        public static void SendFileOverHTTP(HttpListenerResponse response, StorageFile strFilePath, string contentType = "")
+        public static void SendFileOverHTTP(HttpListenerResponse response, string strFilePath, string contentType = "")
         {
-            contentType = contentType == "" ? GetContentTypeFromFileName(strFilePath.FileType) : contentType;
-            IBuffer readBuffer = FileIO.ReadBuffer(strFilePath);
-            long fileLength = readBuffer.Length;
-
-            response.ContentType = contentType;
-            response.ContentLength64 = fileLength;
-            // Now loops sending all the data.
+            contentType = contentType == string.Empty ? GetContentTypeFromFileName(strFilePath.Substring(strFilePath.LastIndexOf(".") + 1)) : contentType;
 
             byte[] buf = new byte[MaxSizeBuffer];
-            using (DataReader dataReader = DataReader.FromBuffer(readBuffer))
+            using FileStream dataReader = new FileStream(strFilePath, FileMode.Open, FileAccess.Read);
+
+            long fileLength = dataReader.Length;
+            response.ContentType = contentType;
+            response.ContentLength64 = fileLength;
+            response.SendChunked = false;
+            // Now loops sending all the data.
+            for (long bytesSent = 0; bytesSent < fileLength;)
             {
-                for (long bytesSent = 0; bytesSent < fileLength;)
-                {
-                    // Determines amount of data left.
-                    long bytesToRead = fileLength - bytesSent;
-                    bytesToRead = bytesToRead < MaxSizeBuffer ? bytesToRead : MaxSizeBuffer;
-                    // Reads the data.
-                    dataReader.ReadBytes(buf);
-                    // Writes data to browser
-                    response.OutputStream.Write(buf, 0, (int)bytesToRead);
-                    // allow some time to physically send the bits. Can be reduce to 10 or even less if not too much other code running in parallel
-                    // Updates bytes read.
-                    bytesSent += bytesToRead;
-                }
+                // Determines amount of data left.
+                long bytesToRead = fileLength - bytesSent;
+                bytesToRead = bytesToRead < MaxSizeBuffer ? bytesToRead : MaxSizeBuffer;
+
+                // Reads the data.
+                dataReader.Read(buf, 0, (int)bytesToRead);
+
+                // Writes data to browser
+                response.OutputStream.Write(buf, 0, (int)bytesToRead);
+
+                // Updates bytes read.
+                bytesSent += bytesToRead;
             }
         }
+#endif
 
         /// <summary>
         /// Send file content over HTTP response.
@@ -465,13 +634,14 @@ namespace nanoFramework.WebServer
         /// <param name="response"><see cref="HttpListenerResponse"/> to send the content over.</param>
         /// <param name="fileName">Name of the file to send over <see cref="HttpListenerResponse"/>.</param>
         /// <param name="content">Content of the file to send.</param>
-        /// /// <param name="contentType">The type of file, if empty string, then will use auto detection</param>
+        /// <param name="contentType">The type of file, if empty string, then will use auto detection.</param>
         public static void SendFileOverHTTP(HttpListenerResponse response, string fileName, byte[] content, string contentType = "")
         {
-            contentType = contentType == "" ? GetContentTypeFromFileName(fileName.Substring(fileName.LastIndexOf('.'))) : contentType;
+            // If no extension, we will get the full file name
+            contentType = contentType == "" ? GetContentTypeFromFileName(fileName.Substring(fileName.LastIndexOf('.') + 1)) : contentType;
             response.ContentType = contentType;
             response.ContentLength64 = content.Length;
-
+            response.SendChunked = false;
             // Now loop to send all the data.
 
             for (long bytesSent = 0; bytesSent < content.Length;)
@@ -483,8 +653,6 @@ namespace nanoFramework.WebServer
                 // Writes data to output stream
                 response.OutputStream.Write(content, (int)bytesSent, (int)bytesToSend);
 
-                // allow some time to physically send the bits. Can be reduce to 10 or even less if not too much other code running in parallel
-
                 // update bytes sent
                 bytesSent += bytesToSend;
             }
@@ -492,149 +660,326 @@ namespace nanoFramework.WebServer
 
         private void StartListener()
         {
-            _listener.Start();
-            while (!_cancel)
+            try
             {
-                HttpListenerContext context = _listener.GetContext();
-                if (context == null)
+                _listener.Start();
+                while (!_cancel)
                 {
-                    return;
-                }
+                    HttpListenerContext context;
 
-                new Thread(() =>
-                {
-                    bool isRoute = false;
-                    string rawUrl = context.Request.RawUrl;
+                    try
+                    {
+                        context = _listener.GetContext();
+                    }
+                    catch (SocketException)
+                    {
+                        // possibly a transient connection error
+                        // (e.g. OS captive-portal probe reset before request line is received)
+                        // this allows continue and accepting the next connection
+                        continue;
+                    }
 
-                    //This is for handling with transitory or bad requests
-                    if (rawUrl == null)
+                    if (context == null)
                     {
                         return;
                     }
 
-                    int urlParam = rawUrl.IndexOf(ParamStart);
-
-                    // Variables used only within the "for". They are here for performance reasons
-                    bool isFound;
-                    string routeStr;
-                    int incForSlash;
-                    string toCompare;
-                    bool mustAuthenticate;
-                    bool isAuthOk;
-                    //
-
-                    foreach (var rt in _callbackRoutes)
+                    new Thread(() =>
                     {
-                        CallbackRoutes route = (CallbackRoutes)rt;
-
-                        routeStr = route.Route;
-                        incForSlash = routeStr.IndexOf('/') == 0 ? 0 : 1;
-                        toCompare = route.CaseSensitive ? rawUrl : rawUrl.ToLower();
-
-                        if (urlParam > 0)
+                        try
                         {
-                            isFound = urlParam == routeStr.Length + incForSlash;
-                        }
-                        else
-                        {
-                            isFound = toCompare.Length == routeStr.Length + incForSlash;
-                        }
-
-                        // Matching the route name
-                        // Matching the method type
-                        if (!isFound ||
-                            (toCompare.IndexOf(routeStr) != incForSlash) ||
-                            (route.Method != string.Empty && context.Request.HttpMethod != route.Method)
-                            )
-                        {
-                            continue;
-                        }
-
-                        // Starting a new thread to be able to handle a new request in parallel
-                        isRoute = true;
-
-                        // Check auth first
-                        mustAuthenticate = route.Authentication != null && route.Authentication.AuthenticationType != AuthenticationType.None;
-                        isAuthOk = !mustAuthenticate;
-
-                        if (mustAuthenticate)
-                        {
-                            if (route.Authentication.AuthenticationType == AuthenticationType.Basic)
+                            //This is for handling with transitory or bad requests
+                            if (context.Request.RawUrl == null)
                             {
-                                var credSite = route.Authentication.Credentials ?? Credential;
-                                var credReq = context.Request.Credentials;
-
-                                isAuthOk = credReq != null
-                                    && (credSite.UserName == credReq.UserName)
-                                    && (credSite.Password == credReq.Password);
-                            }
-                            else if (route.Authentication.AuthenticationType == AuthenticationType.ApiKey)
-                            {
-                                var apikeySite = route.Authentication.ApiKey ?? ApiKey;
-                                var apikeyReq = GetApiKeyFromHeaders(context.Request.Headers);
-
-                                isAuthOk = apikeyReq != null
-                                    && apikeyReq == apikeySite;
-                            }
-                        }
-
-                        if (isAuthOk)
-                        {
-                            route.Callback.Invoke(null, new object[] { new WebServerEventArgs(context) });
-                        }
-                        else
-                        {
-                            if (route.Authentication != null && route.Authentication.AuthenticationType == AuthenticationType.Basic)
-                            {
-                                context.Response.Headers.Add("WWW-Authenticate", $"Basic realm=\"Access to {routeStr}\"");
+                                return;
                             }
 
-                            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                            context.Response.ContentLength64 = 0;
-                        }
+                            CallbackRoutes selectedRoute = null;
+                            bool selectedRouteHasAuth = false;
+                            string multipleCallback = null;
+                            bool hasAuthRoutes = false;
+                            string basicAuthNoCred = null;
+                            bool authFailed = false;
 
-                        // When context has been handed over to WebsocketServer, it will be null at this point
-                        if (context.Response == null)
-                        {
-                            //do nothing this is a websocket that is managed by a websocketserver that is responsible for the context now. 
-                        }
-                        else
-                        {
-                            context.Response.Close();
-                            context.Close();
-                        }
-                    }
+                            // Variables used only within the "for". They are here for performance reasons
+                            bool mustAuthenticate;
+                            bool isAuthOk;
 
-                    if (!isRoute)
-                    {
-                        if (CommandReceived != null)
-                        {
-                            // Starting a new thread to be able to handle a new request in parallel
-                            CommandReceived.Invoke(this, new WebServerEventArgs(context));
-                        }
-                        else
-                        {
-                            context.Response.StatusCode = 404;
-                            context.Response.ContentLength64 = 0;
-                        }
+                            foreach (CallbackRoutes route in _callbackRoutes)
+                            {
+                                if (!IsRouteMatch(route, context.Request.HttpMethod, context.Request.RawUrl))
+                                {
+                                    continue;
+                                }
 
-                        // When context has been handed over to WebsocketServer, it will be null at this point
-                        if (context.Response == null)
-                        {
-                            //do nothing this is a websocket that is managed by a websocketserver that is responsible for the context now. 
-                        }
-                        else
-                        {
-                            context.Response.Close();
-                            context.Close();
-                        }
-                    }
-                }).Start();
+                                // Check auth first
+                                mustAuthenticate = route.Authentication != null && route.Authentication.AuthenticationType != AuthenticationType.None;
+                                if (mustAuthenticate)
+                                {
+                                    hasAuthRoutes = true;
+                                    if (route.Authentication.AuthenticationType == AuthenticationType.Basic)
+                                    {
+                                        var credReq = context.Request.Credentials;
+                                        if (credReq is null)
+                                        {
+                                            if (basicAuthNoCred is null)
+                                            {
+                                                basicAuthNoCred = route.Route;
+                                            }
 
+                                            continue;
+                                        }
+
+                                        var credSite = route.Authentication.Credentials ?? Credential;
+
+                                        isAuthOk = credSite != null
+                                            && (credSite.UserName == credReq.UserName)
+                                            && (credSite.Password == credReq.Password);
+                                    }
+                                    else if (route.Authentication.AuthenticationType == AuthenticationType.ApiKey)
+                                    {
+                                        var apikeyReq = GetApiKeyFromHeaders(context.Request.Headers);
+                                        if (apikeyReq is null)
+                                        {
+                                            continue;
+                                        }
+
+                                        var apikeySite = route.Authentication.ApiKey ?? ApiKey;
+
+                                        isAuthOk = apikeyReq == apikeySite;
+                                    }
+                                    else
+                                    {
+                                        isAuthOk = false;
+                                    }
+
+                                    if (isAuthOk)
+                                    {
+                                        // This route can be used and has precedence over non-authenticated routes
+                                        if (!selectedRouteHasAuth)
+                                        {
+                                            selectedRoute = null;
+                                            multipleCallback = null;
+                                        }
+
+                                        selectedRouteHasAuth = true;
+                                    }
+                                    else
+                                    {
+                                        authFailed = true;
+                                        continue;
+                                    }
+                                }
+                                else if (selectedRouteHasAuth || authFailed)
+                                {
+                                    // The selected route has authentication and/or a route exists with failed authentication.
+                                    // Those have precedence over non-authenticated routes
+                                    continue;
+                                }
+
+                                if (selectedRoute is null)
+                                {
+                                    selectedRoute = route;
+                                }
+                                else
+                                {
+                                    multipleCallback ??= $"Multiple matching callbacks: {selectedRoute.Callback.DeclaringType.FullName}.{selectedRoute.Callback.Name}";
+                                    multipleCallback += $", {route.Callback.DeclaringType.FullName}.{route.Callback.Name}";
+                                }
+                            }
+
+
+                            if (selectedRoute is null)
+                            {
+                                if (hasAuthRoutes)
+                                {
+                                    if (!authFailed && basicAuthNoCred is not null)
+                                    {
+                                        context.Response.Headers.Add("WWW-Authenticate",
+                                            $"Basic realm=\"Access to {basicAuthNoCred}\"");
+                                    }
+
+                                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                                    context.Response.ContentLength64 = 0;
+                                }
+                                else if (CommandReceived != null)
+                                {
+                                    // Starting a new thread to be able to handle a new request in parallel
+                                    CommandReceived.Invoke(this, new WebServerEventArgs(context));
+                                }
+                                else
+                                {
+                                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                                    context.Response.ContentLength64 = 0;
+                                }
+                            }
+                            else if (multipleCallback is not null)
+                            {
+                                multipleCallback += ".";
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                OutputAsStream(context.Response, multipleCallback);
+                            }
+                            else
+                            {
+                                InvokeRoute(selectedRoute, context);
+                            }
+
+                            HandleContextResponse(context);
+                        }
+                        catch (Exception ex)
+                        {
+
+                            try
+                            {
+                                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                                context.Response.ContentLength64 = 0;
+                            }
+                            catch
+                            {
+                                // Response may already be partially sent or the connection closed; nothing to do.
+                            }
+                        }
+                    }).Start();
+
+                }
+
+                if (_listener.IsListening)
+                {
+                    _listener.Stop();
+                }
             }
-            if (_listener.IsListening)
+            catch
             {
-                _listener.Stop();
+                // If we are here then set the server state to not running
+                _cancel = true;
+            }
+
+            WebServerStatusChanged?.Invoke(this, new WebServerStatusEventArgs(WebServerStatus.Stopped));
+        }
+
+        /// <summary>
+        /// Checks if route matches called resource.
+        /// For internal use only.
+        /// </summary>
+        /// <param name="route">Route to check.</param>
+        /// <param name="method">Invoked resource method.</param>
+        /// <param name="rawUrl">Invoked resource URL.</param>
+        /// <returns></returns>
+        public static bool IsRouteMatch(CallbackRoutes route, string method, string rawUrl)
+        {
+            if (method != (string.IsNullOrEmpty(route.Method) ? DefaultRouteMethod : route.Method))
+            {
+                return false;
+            }
+
+            // Remove query parameters from the URL for matching
+            var urlParam = rawUrl.IndexOf(ParamStart);
+            var urlPath = urlParam > 0 ? rawUrl.Substring(0, urlParam) : rawUrl;
+
+            // Normalize the URL path and route for comparison
+            var urlToCompare = route.CaseSensitive ? urlPath : urlPath.ToLower();
+            var routeToCompare = route.CaseSensitive ? route.Route : route.Route.ToLower();
+
+            // Ensure both paths start with '/' for consistent segment splitting
+            if (!urlToCompare.StartsWith("/"))
+            {
+                urlToCompare = "/" + urlToCompare;
+            }
+
+            if (!routeToCompare.StartsWith("/"))
+            {
+                routeToCompare = "/" + routeToCompare;
+            }
+
+            // Split into segments
+            var urlSegments = urlToCompare.Split('/');
+            var routeSegments = routeToCompare.Split('/');
+
+            // Number of segments must match
+            if (urlSegments.Length != routeSegments.Length)
+            {
+                return false;
+            }
+
+            // Compare each segment
+            for (int i = 0; i < routeSegments.Length; i++)
+            {
+                var routeSegment = routeSegments[i];
+                var urlSegment = urlSegments[i];
+
+                // Skip empty segments (from leading slash)
+                if (string.IsNullOrEmpty(routeSegment) && string.IsNullOrEmpty(urlSegment))
+                {
+                    continue;
+                }
+
+                // Check if this is a parameter segment (starts and ends with curly braces)
+                if (routeSegment.Length > 2 &&
+                    routeSegment.StartsWith("{") &&
+                    routeSegment.EndsWith("}"))
+                {
+                    // Parameter segment matches any non-empty segment that doesn't contain '/'
+                    if (string.IsNullOrEmpty(urlSegment) || urlSegment.IndexOf('/') >= 0)
+                    {
+                        return false;
+                    }
+                    // Parameter matches, continue to next segment
+                    continue;
+                }
+
+                // Exact match required for non-parameter segments
+                if (routeSegment != urlSegment)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Method which invokes route. Can be overriden to inject custom logic.
+        /// </summary>
+        /// <param name="route">Current rounte to invoke. Resolved based on parameters.</param>
+        /// <param name="context">Context of current request.</param>
+        protected virtual void InvokeRoute(CallbackRoutes route, HttpListenerContext context)
+        {
+            // Extract route parameters if the route contains parameter placeholders
+            var routeParameters = ExtractRouteParameters(route.Route, context.Request.RawUrl, route.CaseSensitive);
+
+            // Create WebServerEventArgs with or without route parameters
+            var eventArgs = routeParameters != null
+                ? new WebServerEventArgs(context, routeParameters)
+                : new WebServerEventArgs(context);
+
+            route.Callback.Invoke(null, new object[] { eventArgs });
+        }
+
+        private static void HandleContextResponse(HttpListenerContext context)
+        {
+            // When context has been handed over to WebsocketServer, it will be null at this point
+            // Do nothing this is a websocket that is managed by a websocketserver that is responsible for the context now. 
+            if (context.Response == null)
+            {
+                return;
+            }
+
+            try
+            {
+                context.Response.Close();
+            }
+            catch
+            {
+                // Nothing on purpose
+            }
+
+            try
+            {
+                context.Close();
+            }
+            catch
+            {
+                // Nothing on purpose
             }
         }
 
@@ -656,7 +1001,7 @@ namespace nanoFramework.WebServer
         private void ListInterfaces()
         {
             NetworkInterface[] ifaces = NetworkInterface.GetAllNetworkInterfaces();
-            Debug.WriteLine("Number of Interfaces: " + ifaces.Length.ToString());
+            Debug.WriteLine("Number of Interfaces: " + ifaces.Length);
             foreach (NetworkInterface iface in ifaces)
             {
                 Debug.WriteLine("IP:  " + iface.IPv4Address + "/" + iface.IPv4SubnetMask);
@@ -666,48 +1011,57 @@ namespace nanoFramework.WebServer
         /// <summary>
         /// Get the MIME-type for a file name.
         /// </summary>
-        /// <param name="fileName">File name to get content type for.</param>
+        /// <param name="fileExt">File extension to get content type for.</param>
         /// <returns>The MIME-type for the file name.</returns>
-        private static string GetContentTypeFromFileName(string fileName)
+        private static string GetContentTypeFromFileName(string fileExt)
         {
             // normalize to lower case to speed comparison
-            fileName = fileName.ToLower();
+            fileExt = fileExt.ToLower();
 
             string contentType = "text/html";
 
             //determine the type of file for the http header
-            if (fileName == ".cs" ||
-                fileName == ".txt" ||
-                fileName == ".csproj"
-            )
+            if (fileExt == "cs" ||
+                fileExt == "txt" ||
+                fileExt == "csproj")
             {
                 contentType = "text/plain";
             }
-            else if (fileName == ".jpg" ||
-                fileName == ".bmp" ||
-                fileName == ".jpeg" ||
-                fileName == ".png"
-              )
+            else if (fileExt == "jpg" ||
+                fileExt == "jpeg" ||
+                fileExt == "jpe")
             {
-                contentType = "image";
+                contentType = "image/jpeg";
             }
-            else if (fileName == ".htm" ||
-                fileName == ".html"
-              )
+            else if (fileExt == "bmp" ||
+                fileExt == "png" ||
+                fileExt == "gif" ||
+                fileExt == "ief")
+            {
+                contentType = $"image/{fileExt}";
+            }
+            else if (fileExt == "htm" ||
+                fileExt == "html")
             {
                 contentType = "text/html";
             }
-            else if (fileName == ".mp3")
+            else if (fileExt == "mp3")
             {
                 contentType = "audio/mpeg";
             }
-            else if (fileName == ".css")
+            else if (fileExt == "css")
             {
                 contentType = "text/css";
             }
-            else if (fileName == ".ico")
+            else if (fileExt == "ico")
             {
                 contentType = "image/x-icon";
+            }
+            else if (fileExt == "zip" ||
+                fileExt == "json" ||
+                fileExt == "pdf")
+            {
+                contentType = $"application/{fileExt}";
             }
 
             return contentType;

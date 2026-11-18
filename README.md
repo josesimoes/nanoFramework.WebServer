@@ -1,213 +1,58 @@
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_lib-nanoframework.WebServer&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_lib-nanoframework.WebServer) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_lib-nanoframework.WebServer&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_lib-nanoframework.WebServer) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![NuGet](https://img.shields.io/nuget/dt/nanoFramework.WebServer.svg?label=NuGet&style=flat&logo=nuget)](https://www.nuget.org/packages/nanoFramework.WebServer/) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/main/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg?logo=discord&logoColor=white&label=Discord&color=7289DA)](https://discord.gg/gCyBu8T)
+﻿[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_lib-nanoframework.WebServer&metric=alert_status)](https://sonarcloud.io/dashboard?id=nanoframework_lib-nanoframework.WebServer) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanoframework_lib-nanoframework.WebServer&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=nanoframework_lib-nanoframework.WebServer) [![NuGet](https://img.shields.io/nuget/dt/nanoFramework.WebServer.svg?label=NuGet&style=flat&logo=nuget)](https://www.nuget.org/packages/nanoFramework.WebServer/) [![#yourfirstpr](https://img.shields.io/badge/first--timers--only-friendly-blue.svg)](https://github.com/nanoframework/Home/blob/main/CONTRIBUTING.md) [![Discord](https://img.shields.io/discord/478725473862549535.svg?logo=discord&logoColor=white&label=Discord&color=7289DA)](https://discord.gg/gCyBu8T)
 
 ![nanoFramework logo](https://raw.githubusercontent.com/nanoframework/Home/main/resources/logo/nanoFramework-repo-logo.png)
 
 -----
 
-### Welcome to the .NET **nanoFramework** WebServer repository
+# .NET nanoFramework WebServer with Model Context Protocol (MCP) and Skills Discovery
 
 ## Build status
 
 | Component | Build Status | NuGet Package |
 |:-|---|---|
 | nanoFramework.WebServer | [![Build Status](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_apis/build/status/nanoFramework.WebServer?repoName=nanoframework%2FnanoFramework.WebServer&branchName=main)](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_build/latest?definitionId=65&repoName=nanoframework%2FnanoFramework.WebServer&branchName=main) | [![NuGet](https://img.shields.io/nuget/v/nanoFramework.WebServer.svg?label=NuGet&style=flat&logo=nuget)](https://www.nuget.org/packages/nanoFramework.WebServer/) |
+| nanoFramework.WebServer.FileSystem | [![Build Status](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_apis/build/status/nanoFramework.WebServer?repoName=nanoframework%2FnanoFramework.WebServer&branchName=main)](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_build/latest?definitionId=65&repoName=nanoframework%2FnanoFramework.WebServer&branchName=main) | [![NuGet](https://img.shields.io/nuget/v/nanoFramework.WebServer.FileSystem.svg?label=NuGet&style=flat&logo=nuget)](https://www.nuget.org/packages/nanoFramework.WebServer.FileSystem/) |
+| nanoFramework.WebServer.Mcp | [![Build Status](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_apis/build/status/nanoFramework.WebServer?repoName=nanoframework%2FnanoFramework.WebServer&branchName=main)](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_build/latest?definitionId=65&repoName=nanoframework%2FnanoFramework.WebServer&branchName=main) | [![NuGet](https://img.shields.io/nuget/v/nanoFramework.WebServer.Mcp.svg?label=NuGet&style=flat&logo=nuget)](https://www.nuget.org/packages/nanoFramework.WebServer.Mcp/) |
+| nanoFramework.WebServer.Skills | [![Build Status](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_apis/build/status/nanoFramework.WebServer?repoName=nanoframework%2FnanoFramework.WebServer&branchName=main)](https://dev.azure.com/nanoframework/nanoFramework.WebServer/_build/latest?definitionId=65&repoName=nanoframework%2FnanoFramework.WebServer&branchName=main) | [![NuGet](https://img.shields.io/nuget/v/nanoFramework.WebServer.Skills.svg?label=NuGet&style=flat&logo=nuget)](https://www.nuget.org/packages/nanoFramework.WebServer.Skills/) |
 
-## .NET nanoFramework WebServer
+## Overview
 
-This library was coded by [Laurent Ellerbach](@Ellerbach) who generously offered it to the .NET **nanoFramework** project.
+This library provides a lightweight, multi-threaded HTTP/HTTPS WebServer for .NET nanoFramework with comprehensive **Model Context Protocol (MCP)** support and **AI Agent Skills Discovery** (A2A-compatible) for AI agent integration.
 
-This is a simple nanoFramework WebServer. Features:
+### Key Features
 
-- Handle multi-thread requests
-- Serve static files on any storage
-- Handle parameter in URL
-- Possible to have multiple WebServer running at the same time
-- supports GET/PUT and any other word
-- Supports any type of header
-- Supports content in POST
-- Reflection for easy usage of controllers and notion of routes
-- Helpers to return error code directly facilitating REST API
-- HTTPS support
-- [URL decode/encode](https://github.com/nanoframework/lib-nanoFramework.System.Net.Http/blob/develop/nanoFramework.System.Net.Http/Http/System.Net.HttpUtility.cs)
+- **Multi-threaded request handling**
+- **Static file serving** with FileSystem support
+- **RESTful API support** with parameter handling
+- **Route-based controllers** with attribute decoration
+- **Authentication support** (Basic, API Key)
+- **HTTPS/SSL support** with certificates
+- **Model Context Protocol (MCP)** for AI agent integration
+- **AI Agent Skills Discovery** with A2A-compatible Agent Card
+- **Automatic tool discovery** and JSON-RPC 2.0 compliance
 
-Limitations:
-- Does not support any zip in the request or response stream
+## Quick Start
 
-## Usage
+### Basic Event Based WebServer
 
-You just need to specify a port and a timeout for the queries and add an event handler when a request is incoming. With this first way, you will have an event raised every time you'll receive a request.
+Using the Web Server is very straight forward and supports event based calls.
 
 ```csharp
-using (WebServer server = new WebServer(80, HttpProtocol.Http)
+// You need to be connected to a Wi-Fi or ethernet connection with a proper IP Address
+// Optionally you can pass a parameter with the IP address for the server to bind to
+
+using (WebServer server = new WebServer(80, HttpProtocol.Http))
 {
-    // Add a handler for commands that are received by the server.
     server.CommandReceived += ServerCommandReceived;
-
-    // Start the server.
     server.Start();
-
     Thread.Sleep(Timeout.Infinite);
 }
-```
 
-You can as well pass a controller where you can use decoration for the routes and method supported.
-
-```csharp
-using (WebServer server = new WebServer(80, HttpProtocol.Http, new Type[] { typeof(ControllerPerson), typeof(ControllerTest) }))
-{
-    // Start the server.
-    server.Start();
-
-    Thread.Sleep(Timeout.Infinite);
-}
-```
-
-In this case, you're passing 2 classes where you have public methods decorated which will be called every time the route is found.
-
-With the previous example, a very simple and straight forward Test controller will look like that:
-
-```csharp
-public class ControllerTest
-{
-    [Route("test"), Route("Test2"), Route("tEst42"), Route("TEST")]
-    [CaseSensitive]
-    [Method("GET")]
-    public void RoutePostTest(WebServerEventArgs e)
-    {
-        string route = $"The route asked is {e.Context.Request.RawUrl.TrimStart('/').Split('/')[0]}";
-        e.Context.Response.ContentType = "text/plain";
-        WebServer.OutPutStream(e.Context.Response, route);
-    }
-
-    [Route("test/any")]
-    public void RouteAnyTest(WebServerEventArgs e)
-    {
-        WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.OK);
-    }
-}
-```
-
-In this example, the `RoutePostTest` will be called every time the called url will be `test` or `Test2` or `tEst42` or `TEST`, the url can be with parameters and the method GET. Be aware that `Test` won't call the function, neither `test/`.
-
-The `RouteAnyTest`is called whenever the url is `test/any` whatever the method is.
-
-There is a more advance example with simple REST API to get a list of Person and add a Person. Check it in the [sample](./WebServer.Sample/ControllerPerson.cs).
-
-**Important**
-* By default the routes are not case sensitive and the attribute **must** be lowercase
-* If you want to use case sensitive routes like in the previous example, use the attribute `CaseSensitive`. As in the previous example, you **must** write the route as you want it to be responded to.
-
-## A simple GPIO controller REST API
-
-You will find in simple [GPIO controller sample](https://github.com/nanoframework/Samples/tree/main/samples/Webserver/WebServer.GpioRest) REST API. The controller not case sensitive and is working like this:
-
-- To open the pin 2 as output: http://yoururl/open/2/output
-- To open pin 4 as input: http://yoururl/open/4/input
-- To write the value high to pin 2: http://yoururl/write/2/high
-  - You can use high or 1, it has the same effect and will place the pin in high value
-  - You can use low of 0, it has the same effect and will place the pin in low value
-- To read the pin 4: http://yoururl/read/4, you will get as a raw text `high`or `low`depending on the state
-
-## Authentication on controllers
-
-Controllers support authentication. 3 types of authentications are currently implemented on controllers only:
-
-- Basic: the classic user and password following the HTTP standard. Usage:
-    - `[Authentication("Basic")]` will use the default credential of the webserver
-    - `[Authentication("Basic:myuser mypassword")]` will use myuser as a user and my password as a password. Note: the user cannot contains spaces.
-- APiKey in header: add ApiKey in headers with the API key. Usage:
-    - `[Authentication("ApiKey")]` will use the default credential of the webserver
-    - `[Authentication("ApiKeyc:akey")]` will use akey as ApiKey.
-- None: no authentication required. Usage:
-    - `[Authentication("None")]` will use the default credential of the webserver
-
-The Authentication attribute applies to both public Classes an public Methods.
-
-As for the rest of the controller, you can add attributes to define them, override them. The following example gives an idea of what can be done:
-
-```csharp
-[Authentication("Basic")]
-class ControllerAuth
-{
-    [Route("authbasic")]
-    public void Basic(WebServerEventArgs e)
-    {
-        WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.OK);
-    }
-
-    [Route("authbasicspecial")]
-    [Authentication("Basic:user2 password")]
-    public void Special(WebServerEventArgs e)
-    {
-        WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.OK);
-    }
-
-    [Authentication("ApiKey:superKey1234")]
-    [Route("authapi")]
-    public void Key(WebServerEventArgs e)
-    {
-        WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.OK);
-    }
-
-    [Route("authnone")]
-    [Authentication("None")]
-    public void None(WebServerEventArgs e)
-    {
-        WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.OK);
-    }
-
-    [Authentication("ApiKey")]
-    [Route("authdefaultapi")]
-    public void DefaultApi(WebServerEventArgs e)
-    {
-        WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.OK);
-    }
-}
-```
-
-And you can pass default credentials to the server:
-
-```csharp
-using (WebServer server = new WebServer(80, HttpProtocol.Http, new Type[] { typeof(ControllerPerson), typeof(ControllerTest), typeof(ControllerAuth) }))
-{
-    // To test authentication with various scenarios
-    server.ApiKey = "ATopSecretAPIKey1234";
-    server.Credential = new NetworkCredential("topuser", "topPassword");
-
-    // Start the server.
-    server.Start();
-
-    Thread.Sleep(Timeout.Infinite);
-}
-```
-
-With the previous example the following happens:
-
-- All the controller by default, even when nothing is specified will use the controller credentials. In our case, the Basic authentication with the default user (topuser) and password (topPassword) will be used.
-    - When calling http://yoururl/authbasic from a browser, you will be prompted for the user and password, use the default one topuser and topPassword to get access
-    - When calling http://yoururl/authnone, you won't be prompted because the authentication has been overridden for no authentication
-    - When calling http://yoururl/authbasicspecial, the user and password are different from the defautl ones, user2 and password is the right couple here
-- If you would have define in the controller a specific user and password like `[Authentication("Basic:myuser mypassword")]`, then the default one for all the controller would have been myuser and mypassword
-- When calling http://yoururl/authapi, you must pass the header `ApiKey` (case sensitive) with the value `superKey1234` to get authorized, this is overridden the default Basic authentication
-- When calling http://yoururl/authdefaultapi, the default key `ATopSecretAPIKey1234` will be used so you have to pass it in the headers of the request
-
-All up, this is an example to show how to use authentication, it's been defined to allow flexibility.
-
-
-## Managing incoming queries thru events
-
-Very basic usage is the following:
-
-```csharp
 private static void ServerCommandReceived(object source, WebServerEventArgs e)
 {
-    var url = e.Context.Request.RawUrl;
-    Debug.WriteLine($"Command received: {url}, Method: {e.Context.Request.HttpMethod}");
-
-    if (url.ToLower() == "/sayhello")
+    if (e.Context.Request.RawUrl.ToLower() == "/hello")
     {
-        // This is simple raw text returned
-        WebServer.OutPutStream(e.Context.Response, "It's working, url is empty, this is just raw text, /sayhello is just returning a raw text");
+        WebServer.OutputAsStream(e.Context.Response, "Hello from nanoFramework!");
     }
     else
     {
@@ -216,160 +61,324 @@ private static void ServerCommandReceived(object source, WebServerEventArgs e)
 }
 ```
 
-You can do more advance scenario like returning a full HTML page:
+### Controller-Based WebServer
+
+Controllers are supported including with parametarized routes like 'api/led/{id}/dosomething/{order}'.
 
 ```csharp
-WebServer.OutPutStream(e.Context.Response, "<html><head>" +
-    "<title>Hi from nanoFramework Server</title></head><body>You want me to say hello in a real HTML page!<br/><a href='/useinternal'>Generate an internal text.txt file</a><br />" +
-    "<a href='/Text.txt'>Download the Text.txt file</a><br>" +
-    "Try this url with parameters: <a href='/param.htm?param1=42&second=24&NAme=Ellerbach'>/param.htm?param1=42&second=24&NAme=Ellerbach</a></body></html>");
-```
-
-And can get parameters from a URL a an example from the previous link on the param.html page:
-
-```csharp
-if (url.ToLower().IndexOf("/param.htm") == 0)
+using (WebServer server = new WebServer(80, HttpProtocol.Http, new Type[] { typeof(MyController) }))
 {
-    // Test with parameters
-    var parameters = WebServer.decryptParam(url);
-    string toOutput = "<html><head>" +
-        "<title>Hi from nanoFramework Server</title></head><body>Here are the parameters of this URL: <br />";
-    foreach (var par in parameters)
-    {
-        toOutput += $"Parameter name: {par.Name}, Value: {par.Value}<br />";
-    }
-    toOutput += "</body></html>";
-    WebServer.OutPutStream(e.Context.Response, toOutput);
-}
-```
-
-And server static files:
-
-```csharp
-var files = storage.GetFiles();
-foreach (var file in files)
-{
-    if (file.Name == url)
-    {
-        WebServer.SendFileOverHTTP(e.Context.Response, file);
-        return;
-    }
-}
-
-WebServer.OutputHttpCode(e.Context.Response, HttpStatusCode.NotFound);
-```
-
-And also **REST API** is supported, here is a comprehensive example:
-
-```csharp
-if (url.ToLower().IndexOf("/api/") == 0)
-{
-    string ret = $"Your request type is: {e.Context.Request.HttpMethod}\r\n";
-    ret += $"The request URL is: {e.Context.Request.RawUrl}\r\n";
-    var parameters = WebServer.DecodeParam(e.Context.Request.RawUrl);
-    if (parameters != null)
-    {
-        ret += "List of url parameters:\r\n";
-        foreach (var param in parameters)
-        {
-            ret += $"  Parameter name: {param.Name}, value: {param.Value}\r\n";
-        }
-    }
-
-    if (e.Context.Request.Headers != null)
-    {
-        ret += $"Number of headers: {e.Context.Request.Headers.Count}\r\n";
-    }
-    else
-    {
-        ret += "There is no header in this request\r\n";
-    }
-
-    foreach (var head in e.Context.Request.Headers?.AllKeys)
-    {
-        ret += $"  Header name: {head}, Values:";
-        var vals = e.Context.Request.Headers.GetValues(head);
-        foreach (var val in vals)
-        {
-            ret += $"{val} ";
-        }
-
-        ret += "\r\n";
-    }
-
-    if (e.Context.Request.ContentLength64 > 0)
-    {
-
-        ret += $"Size of content: {e.Context.Request.ContentLength64}\r\n";
-        byte[] buff = new byte[e.Context.Request.ContentLength64];
-        e.Context.Request.InputStream.Read(buff, 0, buff.Length);
-        ret += $"Hex string representation:\r\n";
-        for (int i = 0; i < buff.Length; i++)
-        {
-            ret += buff[i].ToString("X") + " ";
-        }
-
-    }
-
-    WebServer.OutPutStream(e.Context.Response, ret);
-}
-```
-
-This API example is basic but as you get the method, you can choose what to do.
-
-As you get the url, you can check for a specific controller called. And you have the parameters and the content payload!
-
-Example of a result with call:
-
-![result](./doc/POSTcapture.jpg)
-
-And more! Check the complete example for more about this WebServer!
-
-## Using HTTPS
-
-You will need to generate a certificate and keys:
-
-```csharp
-X509Certificate _myWebServerCertificate509 = new X509Certificate2(_myWebServerCrt, _myWebServerPrivateKey, "1234");
-
-// X509 RSA key PEM format 2048 bytes
-        // generate with openssl:
-        // > openssl req -newkey rsa:2048 -nodes -keyout selfcert.key -x509 -days 365 -out selfcert.crt
-        // and paste selfcert.crt content below:
-        private const string _myWebServerCrt =
-@"-----BEGIN CERTIFICATE-----
-MORETEXT
------END CERTIFICATE-----";
-
-        // this one is generated with the command below. We need a password.
-        // > openssl rsa -des3 -in selfcert.key -out selfcertenc.key
-        // the one below was encoded with '1234' as the password.
-        private const string _myWebServerPrivateKey =
-@"-----BEGIN RSA PRIVATE KEY-----
-MORETEXTANDENCRYPTED
------END RSA PRIVATE KEY-----";
-
-using (WebServer server = new WebServer(443, HttpProtocol.Https)
-{
-    // Add a handler for commands that are received by the server.
-    server.CommandReceived += ServerCommandReceived;
-    server.HttpsCert = _myWebServerCertificate509;
-
-    server.SslProtocols = System.Net.Security.SslProtocols.Tls | System.Net.Security.SslProtocols.Tls11 | System.Net.Security.SslProtocols.Tls12;
-    // Start the server.
     server.Start();
-
     Thread.Sleep(Timeout.Infinite);
 }
+
+public class MyController
+{
+    [Route("api/hello")]
+    [Method("GET")]
+    public void Hello(WebServerEventArgs e)
+    {
+        WebServer.OutputAsStream(e.Context.Response, "Hello from Controller!");
+    }
+
+    [Route("api/led/{id}")]
+    [Method("GET")]
+    public void LedState(WebServerEventArgs e)
+    {
+        string ledId = e.GetRouteParameter("id");
+        WebServer.OutputAsStream(e.Context.Response, $"You selected Led {ledId}!");
+    }
+}
 ```
 
-> IMPORTANT: because the certificate above is not issued from a Certificate Authority it won't be recognized as a valid certificate. If you want to access the nanoFramework device with your browser, for example, you'll have to add the (CRT file)[WebServer.Sample\webserver-cert.crt] as a trusted one. On Windows, you just have to double click on the CRT file and then click "Install Certificate...".
+## Model Context Protocol (MCP) Support
 
-You can of course use the routes as defined earlier. Both will work, event or route with the notion of controller.
+Enable AI agents to interact with your embedded devices through standardized tools and JSON-RPC 2.0 protocol.
 
-## Feedback and documentation
+### Defining MCP Tools
 
-For documentation, providing feedback, issues and finding out how to contribute please refer to the [Home repo](https://github.com/nanoframework/Home).
+```csharp
+public class IoTTools
+{
+    [McpServerTool("read_sensor", "Reads temperature from sensor")]
+    public static string ReadTemperature()
+    {
+        // Your sensor reading code
+        return "23.5°C";
+    }
+
+    [McpServerTool("control_led", "Controls device LED", "Output the status of the LED")]
+    public static string ControlLed(LedCommand command)
+    {
+        // Your LED control code
+        return $"LED set to {command.State}";
+    }
+}
+
+public class LedCommand
+{
+    public string State
+    {
+        [Description("LED state: on, off, or blink")]
+        get;
+        set;
+    }
+}
+```
+
+### Defining MCP Prompts
+
+You can define reusable, high-level prompts for AI agents using the `McpServerPrompt` attribute. Prompts encapsulate multi-step instructions or workflows that can be invoked by agents.
+
+Here's a simple example:
+
+```csharp
+using nanoFramework.WebServer.Mcp;
+
+public class McpPrompts
+{
+    [McpServerPrompt("echo_sanity_check", "Echo test prompt")]
+    public static PromptMessage[] EchoSanityCheck()
+    {
+        return new PromptMessage[]
+        {
+            new PromptMessage("Call Echo with the string 'Hello MCP world!' and return the response.")
+        };
+    }
+}
+```
+
+Prompts can be discovered and invoked by AI agents in the same way as tools. You can also define prompts with parameters using the `McpPromptParameter` attribute.
+
+### Defining MCP Resources
+
+Resources expose read-only data (such as sensor readings or device state) to AI agents. Mark a parameterless method that returns a `string` with the `McpServerResource` attribute:
+
+```csharp
+using nanoFramework.WebServer.Mcp;
+
+public class IoTResources
+{
+    [McpServerResource("device/temperature", "Temperature", "Current temperature reading")]
+    public static string GetTemperature()
+    {
+        return "23.5°C";
+    }
+}
+```
+
+Resources are discovered like tools and prompts. Register a live object instead of a `Type` (e.g. `DiscoverResources(new object[] { myDevice })`) to expose instance methods bound to that object.
+
+### Setting Up MCP Server
+
+```csharp
+public static void Main()
+{
+    // Connect to WiFi first
+    var connected = WifiNetworkHelper.ConnectDhcp(Ssid, Password, requiresDateTime: true);
+    
+    // Discover and register MCP tools
+    McpToolRegistry.DiscoverTools(new Type[] { typeof(IoTTools) });
+
+    // Discover and register MCP prompts
+    McpPromptRegistry.DiscoverPrompts(new Type[] { typeof(McpPrompts) });
+
+    // Discover and register MCP resources
+    McpResourceRegistry.DiscoverResources(new Type[] { typeof(IoTResources) });
+
+    // You can limit request bodies to 50% of currently available memory to avoid possible memory pressure or DDoS
+    // Any negative value disables the check; the default is -1
+    McpServerController.MaximumRequestBodySize = nanoFramework.Runtime.Native.GC.Run(false) / 2;
+    
+    // Start WebServer with MCP support
+    using (var server = new WebServer(80, HttpProtocol.Http, new Type[] { typeof(McpServerController) }))
+    {
+        // Optional customization
+        McpServerController.ServerName = "MyIoTDevice";
+        McpServerController.Instructions = "IoT device with sensor and LED control capabilities.";
+        
+        server.Start();
+        Thread.Sleep(Timeout.Infinite);
+    }
+}
+```
+
+### Dynamic MCP Providers
+
+Applications that discover capabilities at runtime can supply tools and
+resources without adding MCP attributes. Implement `IMcpToolProvider` and/or
+`IMcpResourceProvider`, then assign the provider before starting the server:
+
+```csharp
+DynamicMcpProvider provider = new DynamicMcpProvider(device);
+McpServerController.ToolProvider = provider;
+McpServerController.ResourceProvider = provider;
+```
+
+When a provider is not assigned, the controller continues to use
+`McpToolRegistry` or `McpResourceRegistry`. Assigning a provider combines its
+tools or resources with the corresponding attribute registry. See the
+[detailed MCP documentation](doc/model-context-protocol.md#dynamic-tool-and-resource-providers)
+for the provider contracts and a complete example.
+
+### AI Agent Integration
+
+Once running, AI agents can discover and invoke your tools:
+
+```json
+// Tool discovery
+POST /mcp
+{
+    "jsonrpc": "2.0",
+    "method": "tools/list",
+    "id": 1
+}
+
+// Tool invocation
+POST /mcp
+{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+        "name": "control_led",
+        "arguments": {"State": "on"}
+    },
+    "id": 2
+}
+```
+
+## AI Agent Skills Discovery
+
+Expose device capabilities as discoverable skills for AI agents using the [A2A (Agent2Agent) protocol](https://a2a-protocol.org) conventions.
+
+### Defining Skills
+
+```csharp
+using nanoFramework.WebServer.Skills;
+
+[Skill("climate", "Climate Control", "HVAC management for building zones")]
+[SkillTag("temperature")]
+[SkillTag("hvac")]
+[SkillExample("What is the current temperature?")]
+public class ClimateSkill
+{
+    [SkillAction("GetTemperature", "Reads current room temperature")]
+    public static double GetTemperature()
+    {
+        return 22.5;
+    }
+
+    [SkillAction("SetTarget", "Sets the target temperature")]
+    public static bool SetTarget(TargetInput input)
+    {
+        return true;
+    }
+}
+
+public class TargetInput
+{
+    public double Temperature
+    {
+        [Description("Target temperature in Celsius")]
+        get;
+        set;
+    }
+}
+```
+
+### Setting Up Skills Server
+
+```csharp
+public static void Main()
+{
+    // Connect to WiFi first
+    var connected = WifiNetworkHelper.ConnectDhcp(Ssid, Password, requiresDateTime: true);
+
+    // Discover and register skills
+    SkillRegistry.DiscoverSkills(new Type[] { typeof(ClimateSkill) });
+
+    // You can limit request bodies to 50% of currently available memory to avoid possible memory pressure or DDoS
+    // Any negative value disables the check; the default is -1
+    SkillDiscoveryController.MaximumRequestBodySize = nanoFramework.Runtime.Native.GC.Run(false) / 2;
+
+    // Start WebServer with Skills Discovery support
+    using (var server = new WebServer(80, HttpProtocol.Http, new Type[] { typeof(SkillDiscoveryController) }))
+    {
+        // Optional customization
+        SkillDiscoveryController.AgentName = "SmartThermostat";
+        SkillDiscoveryController.AgentDescription = "Embedded HVAC controller with sensor capabilities";
+
+        server.Start();
+        Thread.Sleep(Timeout.Infinite);
+    }
+}
+```
+
+### AI Agent Integration
+
+Once running, AI agents can discover and invoke your skills:
+
+```http
+GET /.well-known/agent-card.json
+```
+
+```json
+{
+  "name": "SmartThermostat",
+  "description": "Embedded HVAC controller with sensor capabilities",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "id": "climate",
+      "name": "Climate Control",
+      "tags": ["temperature", "hvac"],
+      "actions": [
+        { "name": "GetTemperature", "description": "Reads current room temperature" },
+        { "name": "SetTarget", "description": "Sets the target temperature" }
+      ]
+    }
+  ]
+}
+```
+
+```http
+POST /skills/invoke
+Content-Type: application/json
+
+{ "skill": "climate", "action": "GetTemperature", "arguments": {} }
+```
+
+## Documentation
+
+| Topic | Description |
+|-------|-------------|
+| [Controllers and Routing](./doc/controllers-routing.md) | Learn about route attributes, method decorations, and URL parameters |
+| [Authentication](./doc/authentication.md) | Configure Basic Auth, API Key, and custom authentication |
+| [HTTPS and Certificates](./doc/https-certificates.md) | Set up SSL/TLS encryption with certificates |
+| [File System Support](./doc/file-system.md) | Serve static files from storage devices |
+| [Model Context Protocol (MCP)](./doc/model-context-protocol.md) | Complete MCP guide for AI agent integration |
+| [AI Agent Skills Discovery](./doc/skills-discovery.md) | A2A-compatible skills discovery and invocation |
+| [REST API Development](./doc/rest-api.md) | Build RESTful APIs with request/response handling |
+| [Event-Driven Programming](./doc/event-driven.md) | Handle requests through events and status monitoring |
+| [Examples and Samples](./doc/examples.md) | Working examples and code samples |
+
+## Limitations
+
+- No compression support in request/response streams
+- MCP implementation supports server features only (no notifications or SSE)
+- No or single parameter limitation for MCP tools and Skills actions (use complex objects for multiple parameters)
+- Prompt parameters, when declared, are always mandatory.
+- Skills Discovery implements A2A discovery and invocation only (no task lifecycle)
+
+## Installation
+
+Install 'nanoFramework.WebServer' for the Web Server without File System support. Install 'nanoFramework.WebServer.FileSystem' for file serving, so with devices supporting File System.
+Install 'nanoFramework.WebServer.Mcp' for MCP support. It does contains the full 'nanoFramework.WebServer' but does not include native file serving. You can add this feature fairly easilly by reusing the code function serving it.
+Install 'nanoFramework.WebServer.Skills' for A2A-compatible AI Agent Skills Discovery. Like MCP, it includes the core 'nanoFramework.WebServer' and can be used alongside MCP.
+
+## Contributing
+
+For documentation, feedback, issues and contributions, please refer to the [Home repo](https://github.com/nanoframework/Home).
 
 Join our Discord community [here](https://discord.gg/gCyBu8T).
 
@@ -379,13 +388,13 @@ The list of contributors to this project can be found at [CONTRIBUTORS](https://
 
 ## License
 
-The **nanoFramework** WebServer library is licensed under the [MIT license](LICENSE.md).
+Licensed under the [MIT license](LICENSE.md).
 
 ## Code of Conduct
 
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behaviour in our community.
 For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
 
-### .NET Foundation
+## .NET Foundation
 
 This project is supported by the [.NET Foundation](https://dotnetfoundation.org).
